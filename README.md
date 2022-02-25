@@ -1,7 +1,59 @@
 # Basic Setup:
 
-### A rotating wireframe of a sphere
+Requirements:
+- NodeJS
+- Express
+- ThreeJS
+
+### Setting up basic express server:
+```javascript
+//Node packages:
+const express = require('express')
+const app = express()
+const port = 3000
+const path = require('path');
+const fs = require('fs');
+
+//Specify the paths for the public html folder and threeJS:
+app.use('/public', express.static('public'))
+app.use('/three/build', express.static('node_modules/three/build'))
+
+//Routing:
+//"Homepage" displays index.html:
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '/public/index.html'));
+})
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
+```
+
+index.html:
+```html
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>My first three.js app</title>
+		<style>
+			body { margin: 0; }
+		</style>
+	</head>
+	<body>
+		<script type = "module" src ="./public/index.js"></script>
+	</body>
+</html>
+```
+
 index.js:
+```javascript
+//Import ThreeJS:
+import * as THREE from "../three/build/three.module.js";
+```
+
+## Adding a primitive wireframe sphere to the scene:
+To check that every thing is working so far, let's 
 ```javascript
 import * as THREE from "../three/build/three.module.js";
 
@@ -54,45 +106,3 @@ function animate() {
 animate();
 ```
 
-index.html:
-```
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="utf-8">
-		<title>My first three.js app</title>
-		<style>
-			body { margin: 0; }
-		</style>
-	</head>
-	<body>
-		<script type = "module" src ="./public/index.js"></script>
-	</body>
-</html>
-```
-
-### Setting up basic express server:
-```javascript
-const express = require('express')
-const app = express()
-const port = 3000
-const path = require('path');
-const fs = require('fs');
-
-app.use('/public', express.static('public'))
-app.use('/three/build', express.static('node_modules/three/build'))
-
-let data = fs.readFileSync('public/data/countries.geojson');
-let dataObj = JSON.parse(data);
-
-console.log(dataObj);
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '/public/index.html'));
-})
-
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
-
-```
