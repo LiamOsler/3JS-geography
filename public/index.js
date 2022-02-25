@@ -108,10 +108,10 @@ function onMouseMove(e){
     mouseTrack.x = e.clientX - window.innerWidth/2;  
     mouseTrack.y = e.clientY - window.innerHeight/2;
 
-    if(Math.abs(mouseTrack.x) < 400){
+    if(Math.abs(mouseTrack.x) < 200){
         mouseTrack.x = 0;
     }
-    if(Math.abs(mouseTrack.y) < 400){
+    if(Math.abs(mouseTrack.y) < 200){
         mouseTrack.y = 0;
     }
 }
@@ -128,10 +128,11 @@ function onScroll(event){
         }
     }
     if(event.wheelDeltaY > 0){
-        orbitAngle.radius+=10;
+        if(orbitAngle.radius < 400){
+            orbitAngle.radius+=10;
+        }
     }
     
-
     console.log(orbitAngle.radius);
 }
 
@@ -139,25 +140,20 @@ function onScroll(event){
 camera.up = new THREE.Vector3(0,1,0);
 
 function cameraPosition(){
-    orbitAngle.x -= mouseTrack.x/20000;
-    orbitAngle.y -= mouseTrack.y/100;
-
-    if(Math.abs(orbitAngle.y) < 300){
-        camera.position.y = orbitAngle.y;
-    }
-
-    console.log(camera.position.y);
-
+    orbitAngle.x -= mouseTrack.x/1000;
+    orbitAngle.y -= mouseTrack.y/1000;
     
-    camera.position.x = Math.cos(orbitAngle.x) * orbitAngle.radius;
-    camera.position.z = Math.sin(orbitAngle.x) * orbitAngle.radius;
+    orbitAngle.y = Math.max(-85, Math.min(85, orbitAngle.y));
 
-
-
-
-
-
+    let lat = Math.max(-85, Math.min(85, orbitAngle.y));
+    let phi = THREE.Math.degToRad(90 - lat);
+    let theta = THREE.Math.degToRad(orbitAngle.x);
     
+
+    camera.position.x = orbitAngle.radius * Math.sin( phi ) * Math.cos( theta );
+    camera.position.y = orbitAngle.radius * Math.cos( phi );
+    camera.position.z = orbitAngle.radius * Math.sin( phi ) * Math.sin( theta );
+
 }
 
 function animate() {

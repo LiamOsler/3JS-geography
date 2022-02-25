@@ -10,6 +10,7 @@
   "dependencies": {
     "express": "^4.17.3",
     "node-fetch": "^3.2.0",
-    "three": "^0.137.5"
+    "three": "^0.137.5",
+    "three-orbitcontrols": "^2.110.3"
   }
 }
