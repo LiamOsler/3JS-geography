@@ -1,5 +1,6 @@
 import * as THREE from "../three/build/three.module.js";
 
+const zeroPad = (num, places) => String(num).padStart(places, '0')
 
 //For calculating xyz from lat and long:
 function vectPosFromLatLonRad(lat,lon,radius){
@@ -22,33 +23,62 @@ function arrPosFromLatLonRad(lat,lon,radius){
 }
 
 
-let countryData; //A variable that will hold the countries.geojson file
-//async function for retrieving the geoJSON country file:
-async function fetchJSON() {
-    const response = await fetch('http://localhost:3000/country-data');
+let countryData; 
+async function fetchBorderJSON() {
+    const response = await fetch('http://localhost:3000/border-data');
     const countryData = await response.json();
     return countryData;
 }
-await fetchJSON().then(data => {
+await fetchBorderJSON().then(data => {
     countryData = data;
 });
 
+let iceDate = {"year": 1978, "month": 11};
+let iceData;
+async function fetchIceJSON(dateString) {
+    const response = await fetch('http://localhost:3000/ice-data/'+dateString);
+    const iceData = await response.json();
+    return iceData;
+}
+await fetchIceJSON(iceDate.year +""+iceDate.month).then(data => {
+    iceData = data;
+});
+
+let iceCount = 0;
+let iceObjs = [];
+
+function dateIncrement(){
+    iceDate.month++;
+    if(iceDate.month >12){
+        iceDate.year++;
+        iceDate.month = 1;
+    }
+    fetchIceJSON(iceDate.year +""+zeroPad(iceDate.month,2)).then(data => {
+        iceData = data;
+    });
+    console.log(iceData);
+
+    for(let ice of iceData.features){
+        for(let boundaries of ice.geometry.coordinates){
+            const points = [];
+            for(let point of boundaries){
+                points.push(vectPosFromLatLonRad(point[1], point[0], 100));
+            }
+            const geometry = new THREE.BufferGeometry().setFromPoints( points );
+            const line = new THREE.Line( geometry, whiteMaterial );
+            iceObjs[iceCount] = new THREE.Line( geometry, whiteMaterial );
+            scene.add(iceObjs[iceCount]);
+            //iceObjs[0].material.color.setHex(0xff0000);
+            iceCount++;
+        }
+    }
+}
 
 //3JS scene:
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
-
-const countryPoints =   { "data":
-                            [
-                                {
-                                    "country" : "name",
-                                    "geometryLatLon" : [],
-                                    "geometryXYZ" : [],
-                                }
-                            ]
-                        }
 
 
 var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xffffff })
@@ -59,20 +89,20 @@ var blackMaterial = new THREE.MeshPhongMaterial( {
     polygonOffsetUnits: 1
 } );
 
-
-
 var sphereGeometry = new THREE.SphereGeometry( 99.9, 24, 24 );
 
 var sphereBackground = new THREE.Mesh( sphereGeometry, blackMaterial );
-var wireframe = new THREE.LineSegments( sphereGeometry, wireframeMaterial );
 scene.add( sphereBackground );
 //sphereBackground.add( wireframe );
 
-const material = new THREE.LineBasicMaterial({
+const greenMaterial = new THREE.LineBasicMaterial({
+	color: 0x00ff00
+});
+
+const whiteMaterial = new THREE.LineBasicMaterial({
 	color: 0xffffff
 });
 for(let country of countryData.features){
-    countryPoints.data[countryPoints.length] = country.properties.ADMIN;
     //console.log(country.properties.ADMIN);
     //console.log(country);
     for(let boundaries of country.geometry.coordinates){
@@ -84,7 +114,7 @@ for(let country of countryData.features){
                     points.push(vectPosFromLatLonRad(point[1], point[0], 100));
                 }
                 const geometry = new THREE.BufferGeometry().setFromPoints( points );
-                const line = new THREE.Line( geometry, material );
+                const line = new THREE.Line( geometry, greenMaterial );
                 scene.add(line);
             }
             else{
@@ -93,13 +123,12 @@ for(let country of countryData.features){
                     points.push(vectPosFromLatLonRad(point[1], point[0], 100));
                 }
                 const geometry = new THREE.BufferGeometry().setFromPoints( points );
-                const line = new THREE.Line( geometry, material );
+                const line = new THREE.Line( geometry, greenMaterial );
                 scene.add(line);
             }
         }
     }
 }
-
 
 
 let mouseTrack = {"x":0, "y":0};
@@ -142,14 +171,12 @@ camera.up = new THREE.Vector3(0,1,0);
 function cameraPosition(){
     orbitAngle.x -= mouseTrack.x/1000;
     orbitAngle.y -= mouseTrack.y/1000;
-    
     orbitAngle.y = Math.max(-85, Math.min(85, orbitAngle.y));
 
     let lat = Math.max(-85, Math.min(85, orbitAngle.y));
     let phi = THREE.Math.degToRad(90 - lat);
     let theta = THREE.Math.degToRad(orbitAngle.x);
     
-
     camera.position.x = orbitAngle.radius * Math.sin( phi ) * Math.cos( theta );
     camera.position.y = orbitAngle.radius * Math.cos( phi );
     camera.position.z = orbitAngle.radius * Math.sin( phi ) * Math.sin( theta );
@@ -165,7 +192,7 @@ function animate() {
     cameraPosition();
     document.addEventListener( 'mousemove', onMouseMove, false );
     document.addEventListener( 'mousewheel', onScroll, false );
-
+    document.addEventListener( 'click', dateIncrement, false );
 
 };
 
