@@ -107,6 +107,7 @@ let iceObjs = [];
 let iceIndex = {"index": 0, "start" : 0, "end": 0, "previous": 0}
 
 function dateIncrement(){
+    if(iceDate.year<2016){
     iceIndex.previous = iceIndex.start;
     let dateDisplay = document.getElementById("date");
     iceIndex.index++;
@@ -150,6 +151,7 @@ function dateIncrement(){
             iceIndex.end++;
         }
     }
+}
 }
 function displayIce(){
 
