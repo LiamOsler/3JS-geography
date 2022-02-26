@@ -37,7 +37,7 @@ function animateIce(){
 }
 
 function playIceAnimation(){
-    if(iceAnimationState == true && iceAnimationDelay%60 == 0){
+    if(iceAnimationState == true && iceAnimationDelay%10 == 0){
         dateIncrement();
     }
     iceAnimationDelay++;
@@ -58,11 +58,25 @@ var blackMaterial = new THREE.MeshPhongMaterial( {
     polygonOffsetUnits: 1
 } );
 const greenMaterial = new THREE.LineBasicMaterial({
-	color: 0x00ff00
+	color: 0x00ff00,
+	linewidth: 5,
+	linecap: 'round', //ignored by WebGLRenderer
+	linejoin:  'round' //ignored by WebGLRenderer
+
 });
 const whiteMaterial = new THREE.LineBasicMaterial({
-	color: 0xffffff
+	color: 0xffffff,
+	linewidth: 5,
+	linecap: 'round', //ignored by WebGLRenderer
+	linejoin:  'round' //ignored by WebGLRenderer
+
 });
+
+const lineMaterial = new THREE.LineBasicMaterial( {
+	color: 0xffffff,
+	linecap: 'round', //ignored by WebGLRenderer
+	linejoin:  'round' //ignored by WebGLRenderer
+} );
 
 
 let countryData; 
@@ -87,9 +101,10 @@ await fetchIceJSON(iceDate.year +""+iceDate.month).then(data => {
 });
 
 let iceObjs = [];
-let iceIndex = {"index": 0, "start" : 0, "end": 0}
+let iceIndex = {"index": 0, "start" : 0, "end": 0, "previous": 0}
 
 function dateIncrement(){
+    iceIndex.previous = iceIndex.start;
     let dateDisplay = document.getElementById("date");
     iceIndex.index++;
     iceIndex.start = iceIndex.end;
@@ -134,12 +149,9 @@ function dateIncrement(){
     }
 }
 function displayIce(){
-    for(let boundaries of iceObjs){
-        boundaries.geometry.dispose();
-        boundaries.material.dispose();
-        scene.remove(boundaries);
-        renderer.renderLists.dispose();
-        boundaries = undefined;
+
+     for(let i = iceIndex.previous; i < iceIndex.end; i++){
+        scene.remove(iceObjs[i]);
      }
 
     for(let i = iceIndex.start; i < iceIndex.end; i++){
@@ -175,6 +187,7 @@ for(let country of countryData.features){
                 }
                 const geometry = new THREE.BufferGeometry().setFromPoints( points );
                 const line = new THREE.Line( geometry, greenMaterial );
+
                 scene.add(line);
             }
         }
@@ -228,6 +241,10 @@ function cameraPosition(){
 
 function init(){
     dateIncrement();
+    window.addEventListener('resize', onWindowResize, false);
+    document.addEventListener( 'mousemove', onMouseMove, false );
+    document.addEventListener( 'mousewheel', onScroll, false );
+    document.addEventListener( 'click', dateIncrement, false );
 }
 
 function animate() {
@@ -237,10 +254,7 @@ function animate() {
     renderer.render( scene, camera );
     displayIce();
     playIceAnimation();
-    window.addEventListener('resize', onWindowResize, false);
-    document.addEventListener( 'mousemove', onMouseMove, false );
-    document.addEventListener( 'mousewheel', onScroll, false );
-    document.addEventListener( 'click', dateIncrement, false );
+
 }
 
 //Window resize event handler:

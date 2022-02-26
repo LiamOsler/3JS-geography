@@ -1,3 +1,8 @@
+# Demo:
+http://arctic-ice.liamosler.ca/
+
+![visualization screenshot](screenshots/arctic-ice.png)
+
 # Basic Setup:
 
 Requirements:
@@ -52,8 +57,8 @@ index.js:
 import * as THREE from "../three/build/three.module.js";
 ```
 
-## Adding a primitive wireframe sphere to the scene:
-To check that every thing is working so far, let's 
+## Adding a primitive sphere to the scene:
+To check that every thing is working so far, let's add a sphere to the screen, it will also serve as a 
 ```javascript
 import * as THREE from "../three/build/three.module.js";
 
@@ -104,5 +109,66 @@ function animate() {
 };
 
 animate();
+```
+
+### Camera controls:
+```javascript
+let mouseTrack = {"x":0, "y":0};
+function onMouseMove(e){
+    mouseTrack.x = e.clientX - window.innerWidth/2;  
+    mouseTrack.y = e.clientY - window.innerHeight/2;
+
+    if(Math.abs(mouseTrack.x) < 200){
+        mouseTrack.x = 0;
+    }
+    if(Math.abs(mouseTrack.y) < 200){
+        mouseTrack.y = 0;
+    }
+}
+
+//console.log(countryPoints);
+const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+//Set the camera position and direction:
+camera.up = new THREE.Vector3(0,1,0);
+//controls.update() must be called after any manual changes to the camera's transform
+let orbitAngle = {"x":0, "y":80, "radius": 300};
+function onScroll(event){
+    if(event.wheelDeltaY < 0){
+        if(orbitAngle.radius > 200){
+            orbitAngle.radius-=10;
+        }
+    }
+    if(event.wheelDeltaY > 0){
+        if(orbitAngle.radius < 400){
+            orbitAngle.radius+=10;
+        }
+    }
+}
+function cameraPosition(){
+    orbitAngle.x -= mouseTrack.x/1000;
+    orbitAngle.y -= mouseTrack.y/1000;
+    orbitAngle.y = Math.max(-85, Math.min(85, orbitAngle.y));
+
+    let lat = Math.max(-85, Math.min(85, orbitAngle.y));
+    let phi = THREE.Math.degToRad(90 - lat);
+    let theta = THREE.Math.degToRad(orbitAngle.x);
+    
+    camera.position.x = orbitAngle.radius * Math.sin( phi ) * Math.cos( theta );
+    camera.position.y = orbitAngle.radius * Math.cos( phi );
+    camera.position.z = orbitAngle.radius * Math.sin( phi ) * Math.sin( theta );
+}
+```
+
+And we will add a call to cameraPosition in our animation loop, and specify camera.lookAt:
+
+```js
+function animate() {
+    requestAnimationFrame(animate);
+    cameraPosition();
+
+
+}
+
+
 ```
 
