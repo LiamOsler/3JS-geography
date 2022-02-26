@@ -1,7 +1,5 @@
 import * as THREE from "../three/build/three.module.js";
 
-const zeroPad = (num, places) => String(num).padStart(places, '0')
-
 //For calculating xyz from lat and long:
 function vectPosFromLatLonRad(lat,lon,radius){
     let phi   = (90-lat)*(Math.PI/180);
@@ -23,6 +21,50 @@ function arrPosFromLatLonRad(lat,lon,radius){
 }
 
 
+
+let iceAnimationState = false;
+let iceAnimationDelay = 0;
+let animationButton = document.getElementById('animate');
+animationButton.addEventListener("click", animateIce);
+
+function animateIce(){
+    iceAnimationState = !iceAnimationState;
+    if(iceAnimationState == false){
+        animationButton.innerText ="Play Animation";
+    }else{
+        animationButton.innerText ="Pause Animation";
+    }
+}
+
+function playIceAnimation(){
+    if(iceAnimationState == true && iceAnimationDelay%60 == 0){
+        dateIncrement();
+    }
+    iceAnimationDelay++;
+}
+
+const zeroPad = (num, places) => String(num).padStart(places, '0')
+//3JS scene:
+const scene = new THREE.Scene();
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.getElementById("three").appendChild( renderer.domElement );
+
+var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xffffff })
+var blackMaterial = new THREE.MeshPhongMaterial( {
+    color: 0xff0000,
+    polygonOffset: true,
+    polygonOffsetFactor: 1, // positive value pushes polygon further away
+    polygonOffsetUnits: 1
+} );
+const greenMaterial = new THREE.LineBasicMaterial({
+	color: 0x00ff00
+});
+const whiteMaterial = new THREE.LineBasicMaterial({
+	color: 0xffffff
+});
+
+
 let countryData; 
 async function fetchBorderJSON() {
     const response = await fetch('http://localhost:3000/border-data');
@@ -33,7 +75,7 @@ await fetchBorderJSON().then(data => {
     countryData = data;
 });
 
-let iceDate = {"year": 1978, "month": 11};
+let iceDate = {"year": 1978, "month": 11, "monthString" : "November"};
 let iceData;
 async function fetchIceJSON(dateString) {
     const response = await fetch('http://localhost:3000/ice-data/'+dateString);
@@ -44,10 +86,13 @@ await fetchIceJSON(iceDate.year +""+iceDate.month).then(data => {
     iceData = data;
 });
 
-let iceCount = 0;
 let iceObjs = [];
+let iceIndex = {"index": 0, "start" : 0, "end": 0}
 
 function dateIncrement(){
+    let dateDisplay = document.getElementById("date");
+    iceIndex.index++;
+    iceIndex.start = iceIndex.end;
     iceDate.month++;
     if(iceDate.month >12){
         iceDate.year++;
@@ -56,7 +101,23 @@ function dateIncrement(){
     fetchIceJSON(iceDate.year +""+zeroPad(iceDate.month,2)).then(data => {
         iceData = data;
     });
-    console.log(iceData);
+
+    switch(iceDate.month){
+        case 1: iceDate.monthString =  "January";       break;
+        case 2: iceDate.monthString =  "February";      break;
+        case 3: iceDate.monthString =  "March";     break;
+        case 4: iceDate.monthString =  "April";     break;
+        case 5: iceDate.monthString =  "May";       break;
+        case 6: iceDate.monthString =  "June";      break;
+        case 7: iceDate.monthString =  "July";      break;
+        case 8: iceDate.monthString =  "August";        break;
+        case 9: iceDate.monthString =  "September";     break;
+        case 10: iceDate.monthString = "October";       break;
+        case 11: iceDate.monthString = "November";      break;
+        case 12: iceDate.monthString = "December";      break;
+    }
+
+    dateDisplay.innerText = iceDate.monthString + " " + iceDate.year;
 
     for(let ice of iceData.features){
         for(let boundaries of ice.geometry.coordinates){
@@ -66,42 +127,32 @@ function dateIncrement(){
             }
             const geometry = new THREE.BufferGeometry().setFromPoints( points );
             const line = new THREE.Line( geometry, whiteMaterial );
-            iceObjs[iceCount] = new THREE.Line( geometry, whiteMaterial );
-            scene.add(iceObjs[iceCount]);
-            //iceObjs[0].material.color.setHex(0xff0000);
-            iceCount++;
+            const iceObj = new THREE.Line(geometry, whiteMaterial);
+            iceObjs.push(iceObj)
+            iceIndex.end++;
         }
     }
 }
+function displayIce(){
+    for(let boundaries of iceObjs){
+        boundaries.geometry.dispose();
+        boundaries.material.dispose();
+        scene.remove(boundaries);
+        renderer.renderLists.dispose();
+        boundaries = undefined;
+     }
 
-//3JS scene:
-const scene = new THREE.Scene();
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize( window.innerWidth, window.innerHeight );
-document.body.appendChild( renderer.domElement );
+    for(let i = iceIndex.start; i < iceIndex.end; i++){
+        scene.add(iceObjs[i]);
+    }
+}
 
-
-var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xffffff })
-var blackMaterial = new THREE.MeshPhongMaterial( {
-    color: 0xff0000,
-    polygonOffset: true,
-    polygonOffsetFactor: 1, // positive value pushes polygon further away
-    polygonOffsetUnits: 1
-} );
-
+//Background sphere and wireframe display options:
 var sphereGeometry = new THREE.SphereGeometry( 99.9, 24, 24 );
-
 var sphereBackground = new THREE.Mesh( sphereGeometry, blackMaterial );
 scene.add( sphereBackground );
 //sphereBackground.add( wireframe );
-
-const greenMaterial = new THREE.LineBasicMaterial({
-	color: 0x00ff00
-});
-
-const whiteMaterial = new THREE.LineBasicMaterial({
-	color: 0xffffff
-});
+//Display the countries:
 for(let country of countryData.features){
     //console.log(country.properties.ADMIN);
     //console.log(country);
@@ -130,9 +181,7 @@ for(let country of countryData.features){
     }
 }
 
-
 let mouseTrack = {"x":0, "y":0};
-
 function onMouseMove(e){
     mouseTrack.x = e.clientX - window.innerWidth/2;  
     mouseTrack.y = e.clientY - window.innerHeight/2;
@@ -147,9 +196,10 @@ function onMouseMove(e){
 
 //console.log(countryPoints);
 const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+//Set the camera position and direction:
+camera.up = new THREE.Vector3(0,1,0);
 //controls.update() must be called after any manual changes to the camera's transform
-let orbitAngle = {"x":0, "y":0, "radius": 300};
-
+let orbitAngle = {"x":0, "y":80, "radius": 300};
 function onScroll(event){
     if(event.wheelDeltaY < 0){
         if(orbitAngle.radius > 200){
@@ -161,13 +211,7 @@ function onScroll(event){
             orbitAngle.radius+=10;
         }
     }
-    
-    console.log(orbitAngle.radius);
 }
-
-//Set the camera position and direction:
-camera.up = new THREE.Vector3(0,1,0);
-
 function cameraPosition(){
     orbitAngle.x -= mouseTrack.x/1000;
     orbitAngle.y -= mouseTrack.y/1000;
@@ -180,21 +224,24 @@ function cameraPosition(){
     camera.position.x = orbitAngle.radius * Math.sin( phi ) * Math.cos( theta );
     camera.position.y = orbitAngle.radius * Math.cos( phi );
     camera.position.z = orbitAngle.radius * Math.sin( phi ) * Math.sin( theta );
+}
 
+function init(){
+    dateIncrement();
 }
 
 function animate() {
-    requestAnimationFrame( animate );
-    //sphereBackground.rotation.y +=0.001;
+    requestAnimationFrame(animate);
+    cameraPosition();
     camera.lookAt(0,0,0);
     renderer.render( scene, camera );
+    displayIce();
+    playIceAnimation();
     window.addEventListener('resize', onWindowResize, false);
-    cameraPosition();
     document.addEventListener( 'mousemove', onMouseMove, false );
     document.addEventListener( 'mousewheel', onScroll, false );
     document.addEventListener( 'click', dateIncrement, false );
-
-};
+}
 
 //Window resize event handler:
 function onWindowResize(event) {
@@ -203,5 +250,5 @@ function onWindowResize(event) {
     camera.updateProjectionMatrix();
 }
 
-
+init();
 animate();

@@ -9,8 +9,6 @@ const fs = require('fs');
 let borderData = fs.readFileSync('public/data/countries_low_res.geojson');
 let borderObj = JSON.parse(borderData);
 
-
-
 function iceData(fileString){
   fileString = "public/data/arctic_ice/extent_N_"+fileString+"_geo.json";
   let iceData = fs.readFileSync(fileString);
