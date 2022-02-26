@@ -31,8 +31,11 @@ function animateIce(){
     iceAnimationState = !iceAnimationState;
     if(iceAnimationState == false){
         animationButton.innerText ="Play Animation";
+        document.addEventListener( 'click', dateIncrement, false );
+
     }else{
         animationButton.innerText ="Pause Animation";
+        document.removeEventListener( 'click', dateIncrement, false );
     }
 }
 
