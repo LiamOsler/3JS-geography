@@ -31,11 +31,8 @@ function animateIce(){
     iceAnimationState = !iceAnimationState;
     if(iceAnimationState == false){
         animationButton.innerText ="Play Animation";
-        document.addEventListener( 'click', dateIncrement, false );
-
     }else{
         animationButton.innerText ="Pause Animation";
-        document.removeEventListener( 'click', dateIncrement, false );
     }
 }
 
@@ -107,7 +104,6 @@ let iceObjs = [];
 let iceIndex = {"index": 0, "start" : 0, "end": 0, "previous": 0}
 
 function dateIncrement(){
-    if(iceDate.year<2016){
     iceIndex.previous = iceIndex.start;
     let dateDisplay = document.getElementById("date");
     iceIndex.index++;
@@ -152,9 +148,10 @@ function dateIncrement(){
         }
     }
 }
-}
 function displayIce(){
-
+    for(let boundaries of iceObjs){
+        scene.remove(boundaries);
+     }
      for(let i = iceIndex.previous; i < iceIndex.end; i++){
         scene.remove(iceObjs[i]);
      }
