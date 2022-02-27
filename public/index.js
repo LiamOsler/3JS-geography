@@ -44,6 +44,7 @@ function playIceAnimation(){
 }
 
 const zeroPad = (num, places) => String(num).padStart(places, '0')
+
 //3JS scene:
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
@@ -52,10 +53,10 @@ document.getElementById("three").appendChild( renderer.domElement );
 
 var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xffffff })
 var blackMaterial = new THREE.MeshPhongMaterial( {
-    color: 0xff0000,
-    polygonOffset: true,
-    polygonOffsetFactor: 1, // positive value pushes polygon further away
-    polygonOffsetUnits: 1
+    color: 0x222222,
+    // polygonOffset: true,
+    // polygonOffsetFactor: 1, // positive value pushes polygon further away
+    // polygonOffsetUnits: 1
 } );
 const greenMaterial = new THREE.LineBasicMaterial({
 	color: 0x00ff00,
@@ -78,6 +79,9 @@ const lineMaterial = new THREE.LineBasicMaterial( {
 	linejoin:  'round' //ignored by WebGLRenderer
 } );
 
+const light = new THREE.AmbientLight( 0x404040 ); // soft white light
+scene.add( light );
+
 
 let countryData; 
 async function fetchBorderJSON() {
@@ -87,6 +91,16 @@ async function fetchBorderJSON() {
 }
 await fetchBorderJSON().then(data => {
     countryData = data;
+});
+
+let pointData; 
+async function fetchPointJSON() {
+    const response = await fetch('http://localhost:3000/point-data');
+    const pointData = await response.json();
+    return pointData;
+}
+await fetchPointJSON().then(data => {
+    pointData = data;
 });
 
 let iceDate = {"year": 1978, "month": 11, "monthString" : "November"};
@@ -99,6 +113,8 @@ async function fetchIceJSON(dateString) {
 await fetchIceJSON(iceDate.year +""+iceDate.month).then(data => {
     iceData = data;
 });
+
+
 
 let iceObjs = [];
 let iceIndex = {"index": 0, "start" : 0, "end": 0, "previous": 0}
@@ -149,12 +165,9 @@ function dateIncrement(){
     }
 }
 function displayIce(){
-    for(let boundaries of iceObjs){
-        scene.remove(boundaries);
-     }
-     for(let i = iceIndex.previous; i < iceIndex.end; i++){
-        scene.remove(iceObjs[i]);
-     }
+    for(let i = iceIndex.previous; i < iceIndex.end; i++){
+    scene.remove(iceObjs[i]);
+    }
 
     for(let i = iceIndex.start; i < iceIndex.end; i++){
         scene.add(iceObjs[i]);
@@ -167,34 +180,37 @@ var sphereBackground = new THREE.Mesh( sphereGeometry, blackMaterial );
 scene.add( sphereBackground );
 //sphereBackground.add( wireframe );
 //Display the countries:
-for(let country of countryData.features){
-    //console.log(country.properties.ADMIN);
-    //console.log(country);
-    for(let boundaries of country.geometry.coordinates){
-        for(let boundary of boundaries){
-            //console.log(boundary.type);
-            if(country.geometry.type == "MultiPolygon"){
-                const points = [];
-                for(let point of boundary){
-                    points.push(vectPosFromLatLonRad(point[1], point[0], 100));
+function displayBorders(){
+    for(let country of countryData.features){
+        //console.log(country.properties.ADMIN);
+        //console.log(country);
+        for(let boundaries of country.geometry.coordinates){
+            for(let boundary of boundaries){
+                //console.log(boundary.type);
+                if(country.geometry.type == "MultiPolygon"){
+                    const points = [];
+                    for(let point of boundary){
+                        points.push(vectPosFromLatLonRad(point[1], point[0], 100));
+                    }
+                    const geometry = new THREE.BufferGeometry().setFromPoints( points );
+                    const line = new THREE.Line( geometry, greenMaterial );
+                    scene.add(line);
                 }
-                const geometry = new THREE.BufferGeometry().setFromPoints( points );
-                const line = new THREE.Line( geometry, greenMaterial );
-                scene.add(line);
-            }
-            else{
-                const points = [];
-                for(let point of boundaries){
-                    points.push(vectPosFromLatLonRad(point[1], point[0], 100));
-                }
-                const geometry = new THREE.BufferGeometry().setFromPoints( points );
-                const line = new THREE.Line( geometry, greenMaterial );
+                else{
+                    const points = [];
+                    for(let point of boundaries){
+                        points.push(vectPosFromLatLonRad(point[1], point[0], 100));
+                    }
+                    const geometry = new THREE.BufferGeometry().setFromPoints( points );
+                    const line = new THREE.Line( geometry, greenMaterial );
 
-                scene.add(line);
+                    scene.add(line);
+                }
             }
         }
     }
 }
+
 
 let mouseTrack = {"x":0, "y":0};
 function onMouseMove(e){
@@ -242,11 +258,13 @@ function cameraPosition(){
 }
 
 function init(){
+    displayBorders();
     dateIncrement();
     window.addEventListener('resize', onWindowResize, false);
     document.addEventListener( 'mousemove', onMouseMove, false );
     document.addEventListener( 'mousewheel', onScroll, false );
     document.addEventListener( 'click', dateIncrement, false );
+    
 }
 
 function animate() {
