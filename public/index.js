@@ -115,7 +115,6 @@ await fetchIceJSON(iceDate.year +""+iceDate.month).then(data => {
 });
 
 
-
 let iceObjs = [];
 let iceIndex = {"index": 0, "start" : 0, "end": 0, "previous": 0}
 
@@ -166,7 +165,7 @@ function dateIncrement(){
 }
 function displayIce(){
     for(let i = iceIndex.previous; i < iceIndex.end; i++){
-    scene.remove(iceObjs[i]);
+        scene.remove(iceObjs[i]);
     }
 
     for(let i = iceIndex.start; i < iceIndex.end; i++){
@@ -174,9 +173,29 @@ function displayIce(){
     }
 }
 
+function displayPoints(){
+    let pointObjs = [];
+    for(let point of pointData.features){
+        //console.log(point);
+        if(point.properties.mapcolor7){
+            let pointCoords = arrPosFromLatLonRad(point.geometry.coordinates[1], point.geometry.coordinates[0], 100)
+            pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+        }
+    }
+    const pointGeometry = new THREE.BufferGeometry();
+    pointGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( pointObjs, 3 ) );
+    const pointMaterial = new THREE.PointsMaterial( { color: 0x444444 } );
+
+    const points = new THREE.Points(pointGeometry, pointMaterial);
+    scene.add(points);
+
+}
+
+
+
 //Background sphere and wireframe display options:
-var sphereGeometry = new THREE.SphereGeometry( 99.9, 24, 24 );
-var sphereBackground = new THREE.Mesh( sphereGeometry, blackMaterial );
+let sphereGeometry = new THREE.SphereGeometry( 99.9, 24, 24 );
+let sphereBackground = new THREE.Mesh( sphereGeometry, blackMaterial );
 scene.add( sphereBackground );
 //sphereBackground.add( wireframe );
 //Display the countries:
@@ -258,6 +277,7 @@ function cameraPosition(){
 }
 
 function init(){
+    displayPoints();
     displayBorders();
     dateIncrement();
     window.addEventListener('resize', onWindowResize, false);

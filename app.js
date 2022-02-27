@@ -16,21 +16,23 @@ function iceData(fileString){
   return iceObj;
 }
 
+//Load the JSON data:
+let pointData = fs.readFileSync('public/data/countries_points.geojson');
+let pointObj = JSON.parse(pointData);
+
 app.use('/public', express.static('public'));
 app.use('/three/', express.static('node_modules/three/'));
-
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '/public/index.html'));
 });
 
-app.get('/version', (req, res) => {
-  const myVersion = 'My version is 0.5';
-  res.json(myVersion);
-});
-
 app.get('/border-data', (req, res) => {
   res.json(borderObj);
+});
+
+app.get('/point-data', (req, res) => {
+  res.json(pointObj);
 });
 
 app.get('/ice-data/:query', (req, res) => {
