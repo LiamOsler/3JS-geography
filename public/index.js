@@ -48,6 +48,7 @@ const zeroPad = (num, places) => String(num).padStart(places, '0')
 //3JS scene:
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
+renderer.setClearColor( 0x111111, 1 );
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.getElementById("three").appendChild( renderer.domElement );
 
@@ -248,7 +249,7 @@ function onMouseMove(e){
 }
 
 //console.log(countryPoints);
-const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 500 );
 //Set the camera position and direction:
 camera.up = new THREE.Vector3(0,1,0);
 //controls.update() must be called after any manual changes to the camera's transform
@@ -286,33 +287,48 @@ function onPointerMove( event ) {
 	pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 }
 
-function init(){
-    const light = new THREE.PointLight( 0xeeeeee, 1, 200 );
-    light.position.set( 0, 150, 0 );
-    scene.add( light );
 
-    displayPoints();
-    displayBorders();
-    dateIncrement();
-    window.addEventListener( 'pointermove', onPointerMove );
-    window.addEventListener('resize', onWindowResize, false);
-    document.addEventListener( 'mousemove', onMouseMove, false );
-    document.addEventListener( 'mousewheel', onScroll, false );
-    document.addEventListener( 'click', dateIncrement, false );
-    
-}
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
+let intersectionStatus = false;
+let rayCursor = {"x": 0, "y":0, "z": 0};
 function raycast(){
     raycaster.setFromCamera( pointer, camera );
     
 	const intersections = raycaster.intersectObject( sphereBackground );
 
-    for (let intersect of intersections){
-        console.log(intersect.distance);
-        console.log(intersect.point);
+    if(intersections.length == 0){
+        intersectionStatus = false;
+    }
+
+    else{
+        intersectionStatus = true;
+        for (let intersect of intersections){
+            rayCursor.x = intersect.point.x;
+            rayCursor.y = intersect.point.y;
+            rayCursor.z = intersect.point.z;
+            // console.log(intersect.distance);
+            // console.log(intersect.point);
+        }
     }
 }
+
+
+//Background sphere and wireframe display options:
+let cursorGeometry = new THREE.SphereGeometry(2, 24, 24 );
+let sphereCursor = new THREE.Mesh( cursorGeometry, whiteMaterial );
+scene.add( sphereCursor );
+
+function displayRaycast(){
+    if(intersectionStatus == true){
+        sphereCursor.position.x = rayCursor.x;
+        sphereCursor.position.y = rayCursor.y;
+        sphereCursor.position.z = rayCursor.z;
+
+    }
+}
+
+
 
 function animate() {
 
@@ -322,11 +338,11 @@ function animate() {
 
     raycast();
 
-    //sphereBackground.position.x++;
-
-    renderer.render( scene, camera );
+    displayRaycast();
     displayIce();
     playIceAnimation();
+
+    renderer.render( scene, camera );
 
 }
 
@@ -335,6 +351,23 @@ function onWindowResize(event) {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+}
+
+function init(){
+    scene.fog = new THREE.Fog(0x111111, 10, 400);
+    const light = new THREE.PointLight( 0xeeeeee, 1, 200 );
+    light.position.set( 0, 150, 0 );
+    scene.add( light );
+
+    displayBorders();
+    displayPoints();
+    dateIncrement();
+    window.addEventListener( 'pointermove', onPointerMove );
+    window.addEventListener('resize', onWindowResize, false);
+    document.addEventListener( 'mousemove', onMouseMove, false );
+    document.addEventListener( 'mousewheel', onScroll, false );
+    document.addEventListener( 'click', dateIncrement, false );
+    
 }
 
 init();
