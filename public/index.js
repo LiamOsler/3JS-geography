@@ -53,12 +53,40 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.getElementById("three").appendChild( renderer.domElement );
 
 var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xffffff })
-var blackMaterial = new THREE.MeshPhongMaterial( {
+var blackMaterial = new THREE.MeshStandardMaterial( {
     color: 0x222222,
+    opacity: 1
     // polygonOffset: true,
     // polygonOffsetFactor: 1, // positive value pushes polygon further away
     // polygonOffsetUnits: 1
 } );
+
+var transparentMaterial = new THREE.MeshStandardMaterial( {
+    color: 0x111111,
+    opacity: 0,
+    depthWrite : false
+    // polygonOffset: true,
+    // polygonOffsetFactor: 1, // positive value pushes polygon further away
+    // polygonOffsetUnits: 1
+} );
+
+var cursorMaterial = new THREE.MeshStandardMaterial( {
+    color: 0xffffff,
+    opacity: 1
+    // polygonOffset: true,
+    // polygonOffsetFactor: 1, // positive value pushes polygon further away
+    // polygonOffsetUnits: 1
+} );
+
+var radarMaterial = new THREE.MeshStandardMaterial( {
+    color: 0x777777,
+    opacity: .01,
+    depthWrite : false,
+    polygonOffset: true,
+    // polygonOffsetFactor: 1, // positive value pushes polygon further away
+    // polygonOffsetUnits: 1
+} );
+
 const greenMaterial = new THREE.LineBasicMaterial({
 	color: 0x00ff00,
 	linewidth: 5,
@@ -80,8 +108,8 @@ const lineMaterial = new THREE.LineBasicMaterial( {
 	linejoin:  'round' //ignored by WebGLRenderer
 } );
 
-const light = new THREE.AmbientLight( 0x404040 ); // soft white light
-scene.add( light );
+const backgroundLight = new THREE.AmbientLight( 0x404040 ); // soft white light
+scene.add( backgroundLight );
 
 
 let countryData; 
@@ -201,6 +229,8 @@ function displayPoints(){
 let sphereGeometry = new THREE.SphereGeometry( 99.9, 24, 24 );
 let sphereBackground = new THREE.Mesh( sphereGeometry, blackMaterial );
 scene.add( sphereBackground );
+
+
 //sphereBackground.add( wireframe );
 //Display the countries:
 function displayBorders(){
@@ -234,6 +264,15 @@ function displayBorders(){
     }
 }
 
+let radarGeometry = new THREE.SphereGeometry(20, 24, 24 );
+let radarObjs = [];
+let placeRadar = true;
+function displayRadar(){
+    // for (let radar of radarObjs){
+    //     radar.display;
+    // }
+}
+
 
 let mouseTrack = {"x":0, "y":0};
 function onMouseMove(e){
@@ -258,11 +297,16 @@ function onScroll(event){
     if(event.wheelDeltaY < 0){
         if(orbitAngle.radius > 200){
             orbitAngle.radius-=10;
+            scene.fog.far -= 10; 
+            scene.fog.near -= 10; 
         }
     }
     if(event.wheelDeltaY > 0){
         if(orbitAngle.radius < 400){
             orbitAngle.radius+=10;
+            scene.fog.far += 10; 
+            scene.fog.near += 10; 
+
         }
     }
 }
@@ -287,7 +331,9 @@ function onPointerMove( event ) {
 	pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 }
 
-
+let raycastGeometry = new THREE.SphereGeometry( 105, 24, 24 );
+let raycastSphere = new THREE.Mesh( raycastGeometry, transparentMaterial );
+//scene.add( raycastSphere );
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let intersectionStatus = false;
@@ -295,7 +341,7 @@ let rayCursor = {"x": 0, "y":0, "z": 0};
 function raycast(){
     raycaster.setFromCamera( pointer, camera );
     
-	const intersections = raycaster.intersectObject( sphereBackground );
+	const intersections = raycaster.intersectObject( raycastSphere );
 
     if(intersections.length == 0){
         intersectionStatus = false;
@@ -316,34 +362,62 @@ function raycast(){
 
 //Background sphere and wireframe display options:
 let cursorGeometry = new THREE.SphereGeometry(2, 24, 24 );
-let sphereCursor = new THREE.Mesh( cursorGeometry, whiteMaterial );
+let sphereCursor = new THREE.Mesh( cursorGeometry, cursorMaterial );
 scene.add( sphereCursor );
+
+const cursorLight = new THREE.PointLight( 0xffffff, 1, 100 );
+scene.add( cursorLight );
 
 function displayRaycast(){
     if(intersectionStatus == true){
+        sphereCursor.visible = true;
+        cursorLight.position.x = rayCursor.x;
+        cursorLight.position.y = rayCursor.y;
+        cursorLight.position.z = rayCursor.z;
         sphereCursor.position.x = rayCursor.x;
         sphereCursor.position.y = rayCursor.y;
         sphereCursor.position.z = rayCursor.z;
-
+    }
+    else{
+        sphereCursor.visible = false;
     }
 }
 
 
 
-function animate() {
+function clickInteraction(){
 
+    if(placeRadar == true){
+        let currRadar = new THREE.Mesh( radarGeometry, radarMaterial ); 
+        currRadar.position.x = rayCursor.x;
+        currRadar.position.y = rayCursor.y;
+        currRadar.position.z = rayCursor.z;
+        currRadar.renderDepth = 0.5;
+        scene.add(currRadar);
+    }
+
+    //console.log(sphereCursor.position);
+    //  const light = new THREE.PointLight( 0xff0000, 1, 10 );
+    //  light.position.set( sphereCursor.position.x +100, sphereCursor.position.y, sphereCursor.position.z );
+    //  scene.add( light );
+}
+
+
+
+function animate() {
     requestAnimationFrame(animate);
     cameraPosition();
     camera.lookAt(0,0,0);
 
     raycast();
-
     displayRaycast();
+
+    displayRadar();
+
     displayIce();
     playIceAnimation();
 
     renderer.render( scene, camera );
-
 }
 
 //Window resize event handler:
@@ -354,10 +428,8 @@ function onWindowResize(event) {
 }
 
 function init(){
-    scene.fog = new THREE.Fog(0x111111, 10, 400);
-    const light = new THREE.PointLight( 0xeeeeee, 1, 200 );
-    light.position.set( 0, 150, 0 );
-    scene.add( light );
+    scene.fog = new THREE.Fog(0x111111, 150, 300);
+
 
     displayBorders();
     displayPoints();
@@ -366,7 +438,7 @@ function init(){
     window.addEventListener('resize', onWindowResize, false);
     document.addEventListener( 'mousemove', onMouseMove, false );
     document.addEventListener( 'mousewheel', onScroll, false );
-    document.addEventListener( 'click', dateIncrement, false );
+    document.addEventListener( 'click', clickInteraction, false );
     
 }
 
