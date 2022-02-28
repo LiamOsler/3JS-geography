@@ -128,6 +128,9 @@ function dateIncrement(){
         iceDate.year++;
         iceDate.month = 1;
     }
+    if(iceDate.year > 1992){
+        iceDate.year =1980;
+    }
     fetchIceJSON(iceDate.year +""+zeroPad(iceDate.month,2)).then(data => {
         iceData = data;
     });
@@ -172,9 +175,9 @@ function displayIce(){
         scene.add(iceObjs[i]);
     }
 }
-
+let pointObjs = [];
+let pointObj;
 function displayPoints(){
-    let pointObjs = [];
     for(let point of pointData.features){
         //console.log(point);
         if(point.properties.mapcolor7){
@@ -186,8 +189,8 @@ function displayPoints(){
     pointGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( pointObjs, 3 ) );
     const pointMaterial = new THREE.PointsMaterial( { color: 0x444444 } );
 
-    const points = new THREE.Points(pointGeometry, pointMaterial);
-    scene.add(points);
+    pointObjs = new THREE.Points(pointGeometry, pointMaterial);
+    scene.add(pointObjs);
 
 }
 
@@ -276,21 +279,51 @@ function cameraPosition(){
     camera.position.z = orbitAngle.radius * Math.sin( phi ) * Math.sin( theta );
 }
 
+
+
+function onPointerMove( event ) {
+	pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+}
+
 function init(){
+    const light = new THREE.PointLight( 0xeeeeee, 1, 200 );
+    light.position.set( 0, 150, 0 );
+    scene.add( light );
+
     displayPoints();
     displayBorders();
     dateIncrement();
+    window.addEventListener( 'pointermove', onPointerMove );
     window.addEventListener('resize', onWindowResize, false);
     document.addEventListener( 'mousemove', onMouseMove, false );
     document.addEventListener( 'mousewheel', onScroll, false );
     document.addEventListener( 'click', dateIncrement, false );
     
 }
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+function raycast(){
+    raycaster.setFromCamera( pointer, camera );
+    
+	const intersections = raycaster.intersectObject( sphereBackground );
+
+    for (let intersect of intersections){
+        console.log(intersect.distance);
+        console.log(intersect.point);
+    }
+}
 
 function animate() {
+
     requestAnimationFrame(animate);
     cameraPosition();
     camera.lookAt(0,0,0);
+
+    raycast();
+
+    //sphereBackground.position.x++;
+
     renderer.render( scene, camera );
     displayIce();
     playIceAnimation();
