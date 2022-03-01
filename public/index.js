@@ -20,6 +20,26 @@ function arrPosFromLatLonRad(lat,lon,radius){
     return [x,y,z];
 }
 
+const globeRadius = 105;
+
+function latLonFromXYZ(x, y, z){
+
+    let phi = Math.acos(z/globeRadius);
+    let theta = Math.asin(y/globeRadius*Math.sin(phi))
+    let lat = theta*(180/Math.PI);
+    let lon = (90 - phi*(180/Math.PI))
+
+    return [lat, lon];
+}
+
+function eulerAngFromXYZ(x, y, z){
+
+    let phi = Math.acos(z/globeRadius);
+    let theta = Math.asin(y/globeRadius*Math.sin(phi))
+
+    return [phi, theta];
+}
+
 
 
 let iceAnimationState = false;
@@ -79,10 +99,9 @@ var cursorMaterial = new THREE.MeshStandardMaterial( {
 } );
 
 var radarMaterial = new THREE.MeshStandardMaterial( {
-    color: 0x777777,
-    opacity: .01,
-    depthWrite : false,
-    polygonOffset: true,
+    color: 0x00ff00,
+    opacity: .1,
+    wireframe: true
     // polygonOffsetFactor: 1, // positive value pushes polygon further away
     // polygonOffsetUnits: 1
 } );
@@ -205,7 +224,6 @@ function displayIce(){
     }
 }
 let pointObjs = [];
-let pointObj;
 function displayPoints(){
     for(let point of pointData.features){
         //console.log(point);
@@ -353,6 +371,7 @@ function raycast(){
             rayCursor.x = intersect.point.x;
             rayCursor.y = intersect.point.y;
             rayCursor.z = intersect.point.z;
+            
             // console.log(intersect.distance);
             // console.log(intersect.point);
         }
@@ -384,16 +403,44 @@ function displayRaycast(){
 }
 
 
+const axesHelper = new THREE.AxesHelper( 200 );
+scene.add( axesHelper );
 
 function clickInteraction(){
 
     if(placeRadar == true){
-        let currRadar = new THREE.Mesh( radarGeometry, radarMaterial ); 
-        currRadar.position.x = rayCursor.x;
-        currRadar.position.y = rayCursor.y;
-        currRadar.position.z = rayCursor.z;
-        currRadar.renderDepth = 0.5;
-        scene.add(currRadar);
+
+        let geometry = new THREE.BoxGeometry( 2, 2, 10 );
+        let material = new THREE.MeshBasicMaterial( { color: 0x00ffff} );
+        let cube = new THREE.Mesh( geometry, material );
+        cube.position.x = rayCursor.x;
+        cube.position.y = rayCursor.y;
+        cube.position.z = rayCursor.z;
+        let rotation = eulerAngFromXYZ( cube.position.x,  cube.position.z, cube.position.y);
+
+        // cube.rotation.y = -rotation[1] - Math.PI/2;
+        // cube.rotation.z = -rotation[0];
+        cube.lookAt(0,0,0);
+
+        // cube.rotation.y = rotation[1];
+        console.log(rotation);
+        
+        // // cube.rotation.x = rotation[0];
+        // cube.rotation.x = rotation[1] - Math.PI;
+
+
+        scene.add( cube );
+
+
+
+        // let currRadar = new THREE.Mesh( radarGeometry, radarMaterial ); 
+        // currRadar.position.x = rayCursor.x;
+        // currRadar.position.y = rayCursor.y;
+        // currRadar.position.z = rayCursor.z;
+        // currRadar.rotation.y = rotation[0];
+
+        // currRadar.renderDepth = 0.5;
+        // scene.add(currRadar);
     }
 
     //console.log(sphereCursor.position);
