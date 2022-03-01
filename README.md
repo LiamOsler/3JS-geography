@@ -1,6 +1,6 @@
 # Demo:
 http://arctic-ice.liamosler.ca/
-<iframe width="560" height="315" src="https://www.youtube.com/embed/-B-H4IHNeJc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+https://www.youtube.com/embed/-B-H4IHNeJc
 
 ![visualization screenshot](screenshots/arctic-ice.png)
 
