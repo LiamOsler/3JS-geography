@@ -35,6 +35,10 @@ app.get('/point-data', (req, res) => {
   res.json(pointObj);
 });
 
+app.get('/population-data', (req, res) => {
+  res.json(pointObj);
+});
+
 app.get('/ice-data/:query', (req, res) => {
   let reqDate = req.params;
   console.log(req.params);

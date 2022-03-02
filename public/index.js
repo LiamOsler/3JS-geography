@@ -83,39 +83,36 @@ var blackMaterial = new THREE.MeshStandardMaterial( {
 
 var transparentMaterial = new THREE.MeshStandardMaterial( {
     color: 0x111111,
-    opacity: 0,
-    depthWrite : false
+    opacity: 0.1,
+    depthWrite : false,
     // polygonOffset: true,
     // polygonOffsetFactor: 1, // positive value pushes polygon further away
     // polygonOffsetUnits: 1
 } );
 
-var cursorMaterial = new THREE.MeshStandardMaterial( {
-    color: 0xffffff,
-    opacity: 1
-    // polygonOffset: true,
-    // polygonOffsetFactor: 1, // positive value pushes polygon further away
-    // polygonOffsetUnits: 1
+var cursorMaterial = new THREE.MeshBasicMaterial( {
+    color: 0x00ffff,
 } );
 
 var radarMaterial = new THREE.MeshStandardMaterial( {
-    color: 0x00ff00,
+    color: 0x888888,
     opacity: .1,
-    wireframe: true
+    depthWrite: false
+    //wireframe: true
     // polygonOffsetFactor: 1, // positive value pushes polygon further away
     // polygonOffsetUnits: 1
 } );
 
-const greenMaterial = new THREE.LineBasicMaterial({
-	color: 0x00ff00,
-	linewidth: 5,
+const borderMaterial = new THREE.LineBasicMaterial({
+	color: 0xffffff,
+	linewidth: 1,
 	linecap: 'round', //ignored by WebGLRenderer
 	linejoin:  'round' //ignored by WebGLRenderer
 
 });
 const whiteMaterial = new THREE.LineBasicMaterial({
 	color: 0xffffff,
-	linewidth: 5,
+	linewidth: 1,
 	linecap: 'round', //ignored by WebGLRenderer
 	linejoin:  'round' //ignored by WebGLRenderer
 
@@ -127,7 +124,7 @@ const lineMaterial = new THREE.LineBasicMaterial( {
 	linejoin:  'round' //ignored by WebGLRenderer
 } );
 
-const backgroundLight = new THREE.AmbientLight( 0x404040 ); // soft white light
+const backgroundLight = new THREE.AmbientLight( 0x555555 ); // soft white light
 scene.add( backgroundLight );
 
 
@@ -223,18 +220,58 @@ function displayIce(){
         scene.add(iceObjs[i]);
     }
 }
-let pointObjs = [];
+let pointLocations= [];
 function displayPoints(){
+    let pointObjs = [];
+    const colors = [];
+
+    const color = new THREE.Color();
     for(let point of pointData.features){
-        //console.log(point);
-        if(point.properties.mapcolor7){
-            let pointCoords = arrPosFromLatLonRad(point.geometry.coordinates[1], point.geometry.coordinates[0], 100)
+        let pointCoords = arrPosFromLatLonRad(point.geometry.coordinates[1], point.geometry.coordinates[0], 100)
+        if(!point.properties.sovereignt){
+            pointLocations.push(pointCoords);
             pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+            color.setRGB(0,0,.5);
+            colors.push(color.r, color.g, color.b);
+        }
+
+        if(point.properties.continent == "North America"){
+            pointLocations.push(pointCoords);
+            pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+            color.setRGB(0,.5,0);
+            colors.push(color.r, color.g, color.b);
+        }
+        if( point.properties.sovereignt 
+            && point.properties.sovereignt !== "Ukraine"
+            && point.properties.sovereignt !== "Russia"
+            && point.properties.sovereignt !== "Belarus"
+            ){
+                pointLocations.push(pointCoords);
+                pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+                color.setRGB(.5,.5,.5);
+                colors.push(color.r, color.g, color.b);
+        }
+        if( point.properties.sovereignt == "Russia"
+            || point.properties.sovereignt == "Belarus"
+            ){
+                pointLocations.push(pointCoords);
+                pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+                color.setRGB(1,0,0);
+                colors.push(color.r, color.g, color.b);
+        }
+        if( point.properties.sovereignt == "Ukraine"
+            ){
+            pointLocations.push(pointCoords);
+            pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+            color.setRGB(1,1,0);
+            colors.push(color.r, color.g, color.b);
         }
     }
     const pointGeometry = new THREE.BufferGeometry();
     pointGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( pointObjs, 3 ) );
-    const pointMaterial = new THREE.PointsMaterial( { color: 0x444444 } );
+    pointGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+    
+    const pointMaterial = new THREE.PointsMaterial( { size: 1, vertexColors: true } );
 
     pointObjs = new THREE.Points(pointGeometry, pointMaterial);
     scene.add(pointObjs);
@@ -264,7 +301,7 @@ function displayBorders(){
                         points.push(vectPosFromLatLonRad(point[1], point[0], 100));
                     }
                     const geometry = new THREE.BufferGeometry().setFromPoints( points );
-                    const line = new THREE.Line( geometry, greenMaterial );
+                    const line = new THREE.Line( geometry, borderMaterial );
                     scene.add(line);
                 }
                 else{
@@ -273,7 +310,7 @@ function displayBorders(){
                         points.push(vectPosFromLatLonRad(point[1], point[0], 100));
                     }
                     const geometry = new THREE.BufferGeometry().setFromPoints( points );
-                    const line = new THREE.Line( geometry, greenMaterial );
+                    const line = new THREE.Line( geometry, borderMaterial );
 
                     scene.add(line);
                 }
@@ -282,7 +319,6 @@ function displayBorders(){
     }
 }
 
-let radarGeometry = new THREE.SphereGeometry(20, 24, 24 );
 let radarObjs = [];
 let placeRadar = true;
 function displayRadar(){
@@ -351,7 +387,7 @@ function onPointerMove( event ) {
 
 let raycastGeometry = new THREE.SphereGeometry( 105, 24, 24 );
 let raycastSphere = new THREE.Mesh( raycastGeometry, transparentMaterial );
-//scene.add( raycastSphere );
+scene.add( raycastSphere );
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let intersectionStatus = false;
@@ -371,7 +407,8 @@ function raycast(){
             rayCursor.x = intersect.point.x;
             rayCursor.y = intersect.point.y;
             rayCursor.z = intersect.point.z;
-            
+            rayCursor.renderDepth = 0.9;
+            rayCursor.onBeforeRender = function( renderer ) { renderer.clearDepth(); };
             // console.log(intersect.distance);
             // console.log(intersect.point);
         }
@@ -380,7 +417,7 @@ function raycast(){
 
 
 //Background sphere and wireframe display options:
-let cursorGeometry = new THREE.SphereGeometry(2, 24, 24 );
+let cursorGeometry = new THREE.SphereGeometry(1, 24, 24 );
 let sphereCursor = new THREE.Mesh( cursorGeometry, cursorMaterial );
 scene.add( sphereCursor );
 
@@ -390,9 +427,11 @@ scene.add( cursorLight );
 function displayRaycast(){
     if(intersectionStatus == true){
         sphereCursor.visible = true;
-        cursorLight.position.x = rayCursor.x;
-        cursorLight.position.y = rayCursor.y;
-        cursorLight.position.z = rayCursor.z;
+        let material = new THREE.MeshBasicMaterial( { color: 0xffffff} );
+        sphereCursor.material = material;
+        // cursorLight.position.x = rayCursor.x;
+        // cursorLight.position.y = rayCursor.y;
+        // cursorLight.position.z = rayCursor.z;
         sphereCursor.position.x = rayCursor.x;
         sphereCursor.position.y = rayCursor.y;
         sphereCursor.position.z = rayCursor.z;
@@ -403,44 +442,36 @@ function displayRaycast(){
 }
 
 
-const axesHelper = new THREE.AxesHelper( 200 );
-scene.add( axesHelper );
+// const axesHelper = new THREE.AxesHelper( 200 );
+// scene.add( axesHelper );
 
 function clickInteraction(){
-
     if(placeRadar == true){
-
-        let geometry = new THREE.BoxGeometry( 2, 2, 10 );
+        let geometry = new THREE.BoxGeometry( 2, 2, 2 );
         let material = new THREE.MeshBasicMaterial( { color: 0x00ffff} );
         let cube = new THREE.Mesh( geometry, material );
         cube.position.x = rayCursor.x;
         cube.position.y = rayCursor.y;
         cube.position.z = rayCursor.z;
-        let rotation = eulerAngFromXYZ( cube.position.x,  cube.position.z, cube.position.y);
 
-        // cube.rotation.y = -rotation[1] - Math.PI/2;
-        // cube.rotation.z = -rotation[0];
         cube.lookAt(0,0,0);
-
-        // cube.rotation.y = rotation[1];
-        console.log(rotation);
-        
-        // // cube.rotation.x = rotation[0];
-        // cube.rotation.x = rotation[1] - Math.PI;
-
+        cube.translateZ(5);
 
         scene.add( cube );
 
 
+        let radarGeometry = new THREE.SphereGeometry(20, 24, 24 );
+        let currRadar = new THREE.Mesh( radarGeometry, radarMaterial ); 
+        currRadar.position.x = rayCursor.x;
+        currRadar.position.y = rayCursor.y;
+        currRadar.position.z = rayCursor.z;
+        currRadar.lookAt(0,0,0);
+        currRadar.translateZ(8);
 
-        // let currRadar = new THREE.Mesh( radarGeometry, radarMaterial ); 
-        // currRadar.position.x = rayCursor.x;
-        // currRadar.position.y = rayCursor.y;
-        // currRadar.position.z = rayCursor.z;
-        // currRadar.rotation.y = rotation[0];
+        currRadar.castShadow = false;
+        currRadar.receiveShadow = false;
 
-        // currRadar.renderDepth = 0.5;
-        // scene.add(currRadar);
+        scene.add(currRadar);
     }
 
     //console.log(sphereCursor.position);
