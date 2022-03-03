@@ -221,11 +221,19 @@ function displayPoints(){
     for(let point of pointData.features){
         let elevation = point.properties.elevation /1000;
         console.log(elevation);
-        let pointCoords = arrPosFromLatLonRad(point.geometry.coordinates[1], point.geometry.coordinates[0], worldRadius + elevation);
-        if(!point.properties.sovereignt){
+        if(!point.properties.continent && point.geometry.coordinates[0] != -180){
+            let pointCoords = arrPosFromLatLonRad(point.geometry.coordinates[1], point.geometry.coordinates[0], worldRadius + elevation);
             pointLocations.push(pointCoords);
             pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
             color.setRGB(0, 1-Math.abs(elevation)/5, 1-Math.abs(elevation/10));
+            colors.push(color.r, color.g, color.b);
+        }
+
+        if(point.properties.sovereignt){
+            let pointCoords = arrPosFromLatLonRad(point.geometry.coordinates[1], point.geometry.coordinates[0], worldRadius + elevation/10);
+            pointLocations.push(pointCoords);
+            pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+            color.setRGB(elevation, Math.sqrt(elevation), Math.sqrt(elevation/2));
             colors.push(color.r, color.g, color.b);
         }
 
@@ -389,15 +397,15 @@ let rayCursor = {"x": 0, "y":0, "z": 0};
 function raycast(){
     raycaster.setFromCamera( pointer, camera );
     
-	const intersections = raycaster.intersectObject( raycastSphere );
+	const sphereIntersection = raycaster.intersectObject( raycastSphere );
 
-    if(intersections.length == 0){
+    if(sphereIntersection.length == 0){
         intersectionStatus = false;
     }
 
     else{
         intersectionStatus = true;
-        for (let intersect of intersections){
+        for (let intersect of sphereIntersection){
             rayCursor.x = intersect.point.x;
             rayCursor.y = intersect.point.y;
             rayCursor.z = intersect.point.z;
