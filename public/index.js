@@ -76,18 +76,12 @@ var wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0x
 var blackMaterial = new THREE.MeshStandardMaterial( {
     color: 0x222222,
     opacity: 1
-    // polygonOffset: true,
-    // polygonOffsetFactor: 1, // positive value pushes polygon further away
-    // polygonOffsetUnits: 1
 } );
 
 var transparentMaterial = new THREE.MeshStandardMaterial( {
     color: 0x111111,
     opacity: 0.1,
     depthWrite : false,
-    // polygonOffset: true,
-    // polygonOffsetFactor: 1, // positive value pushes polygon further away
-    // polygonOffsetUnits: 1
 } );
 
 var cursorMaterial = new THREE.MeshBasicMaterial( {
@@ -98,9 +92,6 @@ var radarMaterial = new THREE.MeshStandardMaterial( {
     color: 0x888888,
     opacity: .1,
     depthWrite: false
-    //wireframe: true
-    // polygonOffsetFactor: 1, // positive value pushes polygon further away
-    // polygonOffsetUnits: 1
 } );
 
 const borderMaterial = new THREE.LineBasicMaterial({
@@ -220,6 +211,7 @@ function displayIce(){
         scene.add(iceObjs[i]);
     }
 }
+let worldRadius = 100;
 let pointLocations= [];
 function displayPoints(){
     let pointObjs = [];
@@ -227,45 +219,47 @@ function displayPoints(){
 
     const color = new THREE.Color();
     for(let point of pointData.features){
-        let pointCoords = arrPosFromLatLonRad(point.geometry.coordinates[1], point.geometry.coordinates[0], 100)
+        let elevation = point.properties.elevation /1000;
+        console.log(elevation);
+        let pointCoords = arrPosFromLatLonRad(point.geometry.coordinates[1], point.geometry.coordinates[0], worldRadius + elevation);
         if(!point.properties.sovereignt){
             pointLocations.push(pointCoords);
             pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
-            color.setRGB(0,0,.5);
+            color.setRGB(0, 1-Math.abs(elevation)/5, 1-Math.abs(elevation/10));
             colors.push(color.r, color.g, color.b);
         }
 
-        if(point.properties.continent == "North America"){
-            pointLocations.push(pointCoords);
-            pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
-            color.setRGB(0,.5,0);
-            colors.push(color.r, color.g, color.b);
-        }
-        if( point.properties.sovereignt 
-            && point.properties.sovereignt !== "Ukraine"
-            && point.properties.sovereignt !== "Russia"
-            && point.properties.sovereignt !== "Belarus"
-            ){
-                pointLocations.push(pointCoords);
-                pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
-                color.setRGB(.5,.5,.5);
-                colors.push(color.r, color.g, color.b);
-        }
-        if( point.properties.sovereignt == "Russia"
-            || point.properties.sovereignt == "Belarus"
-            ){
-                pointLocations.push(pointCoords);
-                pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
-                color.setRGB(1,0,0);
-                colors.push(color.r, color.g, color.b);
-        }
-        if( point.properties.sovereignt == "Ukraine"
-            ){
-            pointLocations.push(pointCoords);
-            pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
-            color.setRGB(1,1,0);
-            colors.push(color.r, color.g, color.b);
-        }
+        // if(point.properties.continent == "North America"){
+        //     pointLocations.push(pointCoords);
+        //     pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+        //     color.setRGB(0,.5,0);
+        //     colors.push(color.r, color.g, color.b);
+        // }
+        // if( point.properties.sovereignt 
+        //     && point.properties.sovereignt !== "Ukraine"
+        //     && point.properties.sovereignt !== "Russia"
+        //     && point.properties.sovereignt !== "Belarus"
+        //     ){
+        //         pointLocations.push(pointCoords);
+        //         pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+        //         color.setRGB(.5,.5,.5);
+        //         colors.push(color.r, color.g, color.b);
+        // }
+        // if( point.properties.sovereignt == "Russia"
+        //     || point.properties.sovereignt == "Belarus"
+        //     ){
+        //         pointLocations.push(pointCoords);
+        //         pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+        //         color.setRGB(1,0,0);
+        //         colors.push(color.r, color.g, color.b);
+        // }
+        // if( point.properties.sovereignt == "Ukraine"
+        //     ){
+        //     pointLocations.push(pointCoords);
+        //     pointObjs.push(pointCoords[0], pointCoords[1], pointCoords[2])
+        //     color.setRGB(1,1,0);
+        //     colors.push(color.r, color.g, color.b);
+        // }
     }
     const pointGeometry = new THREE.BufferGeometry();
     pointGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( pointObjs, 3 ) );
@@ -281,7 +275,7 @@ function displayPoints(){
 
 
 //Background sphere and wireframe display options:
-let sphereGeometry = new THREE.SphereGeometry( 99.9, 24, 24 );
+let sphereGeometry = new THREE.SphereGeometry( 90, 24, 24 );
 let sphereBackground = new THREE.Mesh( sphereGeometry, blackMaterial );
 scene.add( sphereBackground );
 
